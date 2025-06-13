@@ -1,0 +1,456 @@
+.parqueos-panel {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f5f5f5;
+  min-height: 100vh;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 30px;
+  position: relative;
+}
+
+.back-button {
+  position: absolute;
+  left: 0;
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #007bff;
+  cursor: pointer;
+  padding: 10px;
+  border-radius: 5px;
+  transition: background-color 0.3s;
+}
+
+.back-button:hover {
+  background-color: #e7f3ff;
+}
+
+.header h1 {
+  flex: 1;
+  text-align: center;
+  color: #333;
+  margin: 0;
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  align-items: start;
+}
+
+.form-section {
+  background: white;
+  padding: 25px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.form-section h2 {
+  color: #333;
+  margin-bottom: 25px;
+  font-size: 24px;
+  font-weight: 600;
+  text-align: center;
+  border-bottom: 2px solid #007bff;
+  padding-bottom: 10px;
+}
+
+.parqueo-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-weight: 600;
+  color: #555;
+  font-size: 14px;
+}
+
+.form-group input {
+  padding: 12px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.form-section-title {
+  font-weight: 700;
+  color: #333;
+  font-size: 18px;
+  margin-top: 20px;
+  margin-bottom: 15px;
+  border-left: 4px solid #007bff;
+  padding-left: 12px;
+}
+
+.horarios-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px;
+}
+
+.horario-dia {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.horario-dia label {
+  display: block;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.horario-inputs {
+  display: flex;
+  gap: 10px;
+}
+
+.horario-inputs input {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.metodos-pago {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.metodos-pago label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  color: #495057;
+  cursor: pointer;
+}
+
+.metodos-pago input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #007bff;
+}
+
+.plan-group,
+.servicio-group {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.plan-group label,
+.servicio-group label {
+  min-width: 80px;
+  font-weight: 600;
+  color: #495057;
+}
+
+.plan-group input,
+.servicio-group input {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.form-buttons {
+  display: flex;
+  gap: 15px;
+  margin-top: 25px;
+  justify-content: center;
+}
+
+.submit-btn {
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  color: white;
+  border: none;
+  padding: 15px 30px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+}
+
+.submit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
+}
+
+.cancel-btn {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 15px 30px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.cancel-btn:hover {
+  background: #5a6268;
+  transform: translateY(-1px);
+}
+
+.list-section {
+  background: white;
+  padding: 25px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  height: fit-content;
+}
+
+.list-section h2 {
+  color: #333;
+  margin-bottom: 25px;
+  font-size: 24px;
+  font-weight: 600;
+  text-align: center;
+  border-bottom: 2px solid #28a745;
+  padding-bottom: 10px;
+}
+
+.parqueos-list {
+  max-height: 600px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.parqueos-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.parqueos-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.parqueos-list::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 10px;
+}
+
+.parqueos-list::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+.parqueo-item {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  overflow: hidden;
+  transition: all 0.3s;
+}
+
+.parqueo-item:hover {
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.parqueo-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  cursor: pointer;
+  background: white;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.parqueo-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.parqueo-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.parqueo-actions button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 5px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.parqueo-actions button:first-child {
+  background: #ffc107;
+  color: #212529;
+}
+
+.parqueo-actions button:first-child:hover {
+  background: #e0a800;
+  transform: translateY(-1px);
+}
+
+.parqueo-actions button:nth-child(2) {
+  background: #dc3545;
+  color: white;
+}
+
+.parqueo-actions button:nth-child(2):hover {
+  background: #c82333;
+  transform: translateY(-1px);
+}
+
+.expand-icon {
+  font-size: 14px;
+  color: #6c757d;
+  margin-left: 10px;
+  transition: transform 0.3s;
+}
+
+.parqueo-details {
+  padding: 20px;
+  background: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+}
+
+.parqueo-details p {
+  margin: 10px 0;
+  color: #495057;
+  font-size: 14px;
+}
+
+.parqueo-details strong {
+  color: #333;
+  font-weight: 600;
+}
+
+.detail-section {
+  margin: 15px 0;
+}
+
+.detail-section strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #333;
+  font-size: 15px;
+}
+
+.detail-section ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #495057;
+}
+
+.detail-section li {
+  margin: 5px 0;
+  font-size: 14px;
+}
+
+.no-data {
+  text-align: center;
+  color: #6c757d;
+  font-style: italic;
+  padding: 40px 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px dashed #dee2e6;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .content {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .parqueos-panel {
+    padding: 15px;
+  }
+}
+
+@media (max-width: 768px) {
+  .header h1 {
+    font-size: 22px;
+  }
+  
+  .back-button {
+    font-size: 16px;
+  }
+  
+  .form-section,
+  .list-section {
+    padding: 20px;
+  }
+  
+  .horarios-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .plan-group,
+  .servicio-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .plan-group label,
+  .servicio-group label {
+    min-width: auto;
+  }
+  
+  .form-buttons {
+    flex-direction: column;
+  }
+  
+  .parqueo-header {
+    flex-direction: column;
+    gap: 15px;
+    align-items: stretch;
+  }
+  
+  .parqueo-actions {
+    justify-content: center;
+  }
+}
