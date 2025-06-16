@@ -1,17 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './users.css';
+import {
+  getAllUsers,
+  createUser,
+  updateUser,
+  deleteUser
+} from '../firebase/usersService';
 
-interface Vehicle {
+export interface Vehicle {
   id: string;
   color: string;
   marca: string;
   modelo: string;
   placa: string;
   tipo: string;
-  foto?: string; // URL de la imagen en base64 o URL
+  foto?: string;
 }
 
-interface Usuario {
+export interface Usuario {
   id: string;
   nombres: string;
   apellidos: string;
@@ -32,13 +38,14 @@ const UsersPanel: React.FC<UsersPanelProps> = ({ onBack }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
-  const getInitialUserData = (): Omit<Usuario, 'id' | 'creadoEn'> => ({
+  // Removemos vehicles de formData inicial
+  const getInitialUserData = (): Omit<Usuario, 'id' | 'vehicles'> => ({
     nombres: '',
     apellidos: '',
     email: '',
-    role: 'usuario',
+    role: 'cliente', // Cambiado de 'usuario' a 'cliente' para consistencia
     telefono: '',
-    vehicles: []
+    creadoEn: new Date().toISOString()
   });
 
   const getInitialVehicleData = (): Omit<Vehicle, 'id'> => ({
@@ -50,14 +57,20 @@ const UsersPanel: React.FC<UsersPanelProps> = ({ onBack }) => {
     foto: ''
   });
 
-  const [formData, setFormData] = useState<Omit<Usuario, 'id' | 'creadoEn'>>(getInitialUserData());
+  // Cambiamos el tipo de formData para no incluir vehicles
+  const [formData, setFormData] = useState<Omit<Usuario, 'id' | 'vehicles'>>(getInitialUserData());
   const [vehicleFormData, setVehicleFormData] = useState<Omit<Vehicle, 'id'>>(getInitialVehicleData());
   const [isEditingVehicle, setIsEditingVehicle] = useState(false);
   const [editingVehicleId, setEditingVehicleId] = useState<string | null>(null);
+  const [vehiclesTemp, setVehiclesTemp] = useState<Vehicle[]>([]);
 
-  const handleGoBack = () => {
-    onBack();
-  };
+  useEffect(() => {
+    const fetchUsers = async () => {
+      const usersFromDB = await getAllUsers();
+      setUsuarios(usersFromDB);
+    };
+    fetchUsers();
+  }, []);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -76,15 +89,13 @@ const UsersPanel: React.FC<UsersPanelProps> = ({ onBack }) => {
   const handleVehicleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validar tipo de archivo
       const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
       if (!allowedTypes.includes(file.type)) {
         alert('Por favor, seleccione una imagen válida (JPG, PNG, GIF, WEBP)');
         return;
       }
 
-      // Validar tamaño (máximo 5MB)
-      const maxSize = 5 * 1024 * 1024; // 5MB
+      const maxSize = 5 * 1024 * 1024;
       if (file.size > maxSize) {
         alert('La imagen es demasiado grande. El tamaño máximo es 5MB');
         return;
@@ -102,18 +113,12 @@ const UsersPanel: React.FC<UsersPanelProps> = ({ onBack }) => {
     }
   };
 
-  const removeVehicleImage = () => {
-    setVehicleFormData(prev => ({
-      ...prev,
-      foto: ''
-    }));
-  };
-
   const resetForm = () => {
     setFormData(getInitialUserData());
     setSelectedUsuario(null);
     setIsEditing(false);
     resetVehicleForm();
+    setVehiclesTemp([]);
   };
 
   const resetVehicleForm = () => {
@@ -122,28 +127,23 @@ const UsersPanel: React.FC<UsersPanelProps> = ({ onBack }) => {
     setEditingVehicleId(null);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleCancelVehicleEdit = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    
+    e.stopPropagation();
+    resetVehicleForm();
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
     if (isEditing && selectedUsuario) {
-      setUsuarios(prev => prev.map(u => 
-        u.id === selectedUsuario.id 
-          ? { 
-              ...formData, 
-              id: selectedUsuario.id,
-              creadoEn: selectedUsuario.creadoEn
-            }
-          : u
-      ));
+      await updateUser(selectedUsuario.id, formData, vehiclesTemp);
     } else {
-      const newUsuario: Usuario = {
-        ...formData,
-        id: Date.now().toString(),
-        creadoEn: new Date().toISOString()
-      };
-      setUsuarios(prev => [...prev, newUsuario]);
+      await createUser(formData, vehiclesTemp);
     }
-    
+
+    const updatedUsers = await getAllUsers();
+    setUsuarios(updatedUsers);
     resetForm();
   };
 
@@ -155,15 +155,18 @@ const UsersPanel: React.FC<UsersPanelProps> = ({ onBack }) => {
       email: usuario.email,
       role: usuario.role,
       telefono: usuario.telefono,
-      vehicles: usuario.vehicles
+      creadoEn: usuario.creadoEn
     });
+    setVehiclesTemp(usuario.vehicles ?? []);
     setIsEditing(true);
   };
 
-  const handleDelete = (id: string) => {
-    setUsuarios(prev => prev.filter(u => u.id !== id));
-    if (selectedUsuario?.id === id) {
-      resetForm();
+  const handleDelete = async (id: string) => {
+    if (window.confirm('¿Estás seguro de que deseas eliminar este usuario?')) {
+      await deleteUser(id);
+      const updatedUsers = await getAllUsers();
+      setUsuarios(updatedUsers);
+      if (selectedUsuario?.id === id) resetForm();
     }
   };
 
@@ -180,44 +183,29 @@ const UsersPanel: React.FC<UsersPanelProps> = ({ onBack }) => {
     setEditingVehicleId(vehicle.id);
   };
 
-  const handleDeleteVehicle = (vehicleId: string) => {
-    setFormData(prev => ({
-      ...prev,
-      vehicles: prev.vehicles.filter(v => v.id !== vehicleId)
-    }));
+  const handleDeleteVehicle = (e: React.MouseEvent<HTMLButtonElement>, vehicleId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setVehiclesTemp(prev => prev.filter(v => v.id !== vehicleId));
   };
 
-  // Nueva función para manejar el click del botón de agregar vehículo
-  const handleAddVehicleClick = () => {
-    // Validar que al menos marca y modelo estén llenos
-    if (!vehicleFormData.marca.trim() || !vehicleFormData.modelo.trim()) {
-      alert('Por favor, complete al menos la marca y el modelo del vehículo');
-      return;
-    }
+  const handleAddVehicleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
     
     if (isEditingVehicle && editingVehicleId) {
-      setFormData(prev => ({
-        ...prev,
-        vehicles: prev.vehicles.map(v => 
-          v.id === editingVehicleId 
-            ? {
-                ...vehicleFormData,
-                id: editingVehicleId
-              }
-            : v
+      setVehiclesTemp(prev =>
+        prev.map(v =>
+          v.id === editingVehicleId ? { ...vehicleFormData, id: editingVehicleId } : v
         )
-      }));
+      );
     } else {
       const newVehicle: Vehicle = {
         ...vehicleFormData,
         id: Date.now().toString()
       };
-      setFormData(prev => ({
-        ...prev,
-        vehicles: [...prev.vehicles, newVehicle]
-      }));
+      setVehiclesTemp(prev => [...prev, newVehicle]);
     }
-    
     resetVehicleForm();
   };
 
@@ -237,14 +225,30 @@ const UsersPanel: React.FC<UsersPanelProps> = ({ onBack }) => {
     return new Date(dateString).toLocaleString('es-ES');
   };
 
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'admin': return '#dc3545';
+  // Mejorada la función getRoleColor y agregada getRoleLabel
+  const getRoleColor = (role: string): string => {
+    switch (role.toLowerCase()) {
+      case 'admin':
+      case 'administrador': return '#dc3545';
       case 'cliente': return '#28a745';
       case 'operador': return '#17a2b8';
       case 'supervisor': return '#6f42c1';
       default: return '#6c757d';
     }
+  };
+
+  const getRoleLabel = (role: string): string => {
+    switch (role.toLowerCase()) {
+      case 'admin': return 'Administrador';
+      case 'cliente': return 'Cliente';
+      case 'operador': return 'Operador';
+      case 'supervisor': return 'Supervisor';
+      default: return role.charAt(0).toUpperCase() + role.slice(1);
+    }
+  };
+
+  const handleGoBack = () => {
+    onBack();
   };
 
   return (
@@ -313,6 +317,7 @@ const UsersPanel: React.FC<UsersPanelProps> = ({ onBack }) => {
                 value={formData.role}
                 onChange={(e) => handleInputChange('role', e.target.value)}
                 className="role-select"
+                required
               >
                 <option value="cliente">Cliente</option>
                 <option value="admin">Administrador</option>
@@ -324,50 +329,44 @@ const UsersPanel: React.FC<UsersPanelProps> = ({ onBack }) => {
             <div className="vehicles-section">
               <h3>Vehículos</h3>
               
-              {/* Cambiado de form a div para evitar formularios anidados */}
               <div className="vehicle-form">
                 <div className="form-group">
-                  <label>Marca: *</label>
+                  <label>Marca:</label>
                   <input
                     type="text"
                     value={vehicleFormData.marca}
                     onChange={(e) => handleVehicleInputChange('marca', e.target.value)}
-                    placeholder="Toyota, Honda, etc."
-                    required
+                    placeholder="Ej: Toyota"
                   />
                 </div>
-
                 <div className="form-group">
-                  <label>Modelo: *</label>
+                  <label>Modelo:</label>
                   <input
                     type="text"
                     value={vehicleFormData.modelo}
                     onChange={(e) => handleVehicleInputChange('modelo', e.target.value)}
-                    placeholder="Corolla, Civic, etc."
-                    required
+                    placeholder="Ej: Corolla"
                   />
                 </div>
-
                 <div className="form-group">
                   <label>Placa:</label>
                   <input
                     type="text"
                     value={vehicleFormData.placa}
                     onChange={(e) => handleVehicleInputChange('placa', e.target.value)}
-                    placeholder="ABC-123"
+                    placeholder="Ej: ABC-123"
+                    style={{ textTransform: 'uppercase' }}
                   />
                 </div>
-
                 <div className="form-group">
                   <label>Color:</label>
                   <input
                     type="text"
                     value={vehicleFormData.color}
                     onChange={(e) => handleVehicleInputChange('color', e.target.value)}
-                    placeholder="Rojo, Azul, etc."
+                    placeholder="Ej: Blanco"
                   />
                 </div>
-
                 <div className="form-group">
                   <label>Tipo:</label>
                   <select
@@ -381,91 +380,31 @@ const UsersPanel: React.FC<UsersPanelProps> = ({ onBack }) => {
                     <option value="pickup">Pickup</option>
                   </select>
                 </div>
-
                 <div className="form-group">
-                  <label>Foto del Vehículo:</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleVehicleImageChange}
-                    style={{
-                      width: '100%',
-                      padding: '8px',
-                      border: '1px solid #ddd',
-                      borderRadius: '4px',
-                      fontSize: '14px'
-                    }}
-                  />
+                  <label>Foto:</label>
+                  <input type="file" accept="image/*" onChange={handleVehicleImageChange} />
                   {vehicleFormData.foto && (
-                    <div style={{ marginTop: '10px' }}>
-                      <img
-                        src={vehicleFormData.foto}
-                        alt="Vista previa del vehículo"
-                        style={{
-                          width: '100%',
-                          maxWidth: '200px',
-                          height: '150px',
-                          objectFit: 'cover',
-                          borderRadius: '8px',
-                          border: '1px solid #ddd'
-                        }}
-                      />
-                      <button
-                        type="button"
-                        onClick={removeVehicleImage}
-                        style={{
-                          display: 'block',
-                          marginTop: '8px',
-                          padding: '4px 8px',
-                          backgroundColor: '#dc3545',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                          fontSize: '12px'
-                        }}
-                      >
-                        Eliminar imagen
-                      </button>
-                    </div>
+                    <img src={vehicleFormData.foto} alt="Vista previa" style={{ width: '100px', marginTop: '10px' }} />
                   )}
                 </div>
-
-                <button 
-                  type="button" 
-                  onClick={handleAddVehicleClick}
-                  className="add-vehicle-btn"
-                >
+                <button type="button" onClick={handleAddVehicleClick} className="add-vehicle-btn">
                   {isEditingVehicle ? 'Actualizar Vehículo' : 'Agregar Vehículo'}
                 </button>
+                {isEditingVehicle && (
+                  <button type="button" onClick={handleCancelVehicleEdit} className="cancel-btn">
+                    Cancelar Edición
+                  </button>
+                )}
               </div>
 
-              {isEditingVehicle && (
-                <button 
-                  type="button"
-                  onClick={resetVehicleForm}
-                  style={{
-                    background: '#6c757d',
-                    color: 'white',
-                    border: 'none',
-                    padding: '8px 16px',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    marginTop: '10px',
-                    width: '100%'
-                  }}
-                >
-                  Cancelar Edición
-                </button>
-              )}
-
+              {/* Lista de vehículos temporales */}
               <div style={{ marginTop: '15px' }}>
-                {formData.vehicles.length === 0 ? (
+                {vehiclesTemp.length === 0 ? (
                   <p style={{ textAlign: 'center', color: '#6c757d', fontStyle: 'italic' }}>
                     No hay vehículos registrados
                   </p>
                 ) : (
-                  formData.vehicles.map(vehicle => (
+                  vehiclesTemp.map(vehicle => (
                     <div key={vehicle.id} className="vehicle-item">
                       <div className="vehicle-info" style={{ display: 'flex', alignItems: 'center' }}>
                         {vehicle.foto && (
@@ -490,13 +429,15 @@ const UsersPanel: React.FC<UsersPanelProps> = ({ onBack }) => {
                       </div>
                       <div className="vehicle-actions">
                         <button 
+                          type="button"
                           onClick={() => handleEditVehicle(vehicle)}
                           className="edit-vehicle-btn"
                         >
                           Editar
                         </button>
                         <button 
-                          onClick={() => handleDeleteVehicle(vehicle.id)}
+                          type="button"
+                          onClick={(e) => handleDeleteVehicle(e, vehicle.id)}
                           className="delete-vehicle-btn"
                         >
                           Eliminar
@@ -526,7 +467,7 @@ const UsersPanel: React.FC<UsersPanelProps> = ({ onBack }) => {
         </div>
 
         <div className="list-section">
-          <h2>Usuarios Registrados</h2>
+          <h2>Usuarios Registrados ({usuarios.length})</h2>
           <div className="users-list">
             {usuarios.length === 0 ? (
               <div className="no-data">
@@ -542,13 +483,26 @@ const UsersPanel: React.FC<UsersPanelProps> = ({ onBack }) => {
                     <div className="user-info">
                       <h3>{usuario.nombres} {usuario.apellidos}</h3>
                       <p>{usuario.email} • {usuario.telefono}</p>
+                      {/* Agregamos el rol también en la información básica */}
+                      <p className="user-role-text">
+                        <strong>Rol:</strong> {getRoleLabel(usuario.role)}
+                      </p>
                     </div>
                     <div className="user-actions">
                       <span 
                         className={`role-badge ${usuario.role}`}
-                        style={{ backgroundColor: getRoleColor(usuario.role) }}
+                        style={{ 
+                          backgroundColor: getRoleColor(usuario.role),
+                          color: 'white',
+                          padding: '4px 8px',
+                          borderRadius: '12px',
+                          fontSize: '12px',
+                          fontWeight: 'bold',
+                          textTransform: 'uppercase',
+                          marginRight: '8px'
+                        }}
                       >
-                        {usuario.role.toUpperCase()}
+                        {getRoleLabel(usuario.role)}
                       </span>
                       <button 
                         onClick={(e) => { e.stopPropagation(); handleEdit(usuario); }}
@@ -559,7 +513,8 @@ const UsersPanel: React.FC<UsersPanelProps> = ({ onBack }) => {
                           border: 'none',
                           borderRadius: '5px',
                           cursor: 'pointer',
-                          fontSize: '14px'
+                          fontSize: '14px',
+                          marginRight: '5px'
                         }}
                       >
                         Editar
@@ -573,7 +528,8 @@ const UsersPanel: React.FC<UsersPanelProps> = ({ onBack }) => {
                           border: 'none',
                           borderRadius: '5px',
                           cursor: 'pointer',
-                          fontSize: '14px'
+                          fontSize: '14px',
+                          marginRight: '8px'
                         }}
                       >
                         Eliminar
@@ -601,7 +557,14 @@ const UsersPanel: React.FC<UsersPanelProps> = ({ onBack }) => {
                         </div>
                         <div className="detail-item">
                           <strong>Rol</strong>
-                          <span>{usuario.role}</span>
+                          <span 
+                            style={{ 
+                              color: getRoleColor(usuario.role),
+                              fontWeight: 'bold'
+                            }}
+                          >
+                            {getRoleLabel(usuario.role)}
+                          </span>
                         </div>
                         <div className="detail-item">
                           <strong>Fecha Creación</strong>
@@ -609,13 +572,13 @@ const UsersPanel: React.FC<UsersPanelProps> = ({ onBack }) => {
                         </div>
                         <div className="detail-item">
                           <strong>Total Vehículos</strong>
-                          <span>{usuario.vehicles.length}</span>
+                          <span>{usuario.vehicles?.length || 0}</span>
                         </div>
                       </div>
 
                       <div className="vehicles-list">
                         <h4>Vehículos Registrados</h4>
-                        {usuario.vehicles.length === 0 ? (
+                        {!usuario.vehicles || usuario.vehicles.length === 0 ? (
                           <div className="no-vehicles">
                             Este usuario no tiene vehículos registrados
                           </div>

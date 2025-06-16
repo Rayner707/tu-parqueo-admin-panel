@@ -1,40 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './parqueos.css';
-
-interface Horario {
-  dia: string;
-  inicio: string;
-  fin: string;
-}
-
-interface MetodoPago {
-  nombre: string;
-  activo: boolean;
-}
-
-interface Plan {
-  rango: string;
-  precio: number;
-}
-
-interface Servicio {
-  nombre: string;
-  precio: number;
-}
-
-interface Parqueo {
-  id: string;
-  direccion: string;
-  disponibles: number;
-  etiqueta: string;
-  horarios: Horario[];
-  metodosPago: MetodoPago[];
-  nombre: string;
-  planes: Plan[];
-  precioPorHora: number;
-  servicios: Servicio[];
-  ubicacion: string;
-}
+import { ParqueosService } from '../firebase/parqueosService';
+import type { ParqueoInput, Parqueo } from '../firebase/parqueosService';
 
 interface ParqueosPanelProps {
   onBack: () => void;
@@ -46,135 +13,72 @@ const ParqueosPanel: React.FC<ParqueosPanelProps> = ({ onBack }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
-  const getInitialFormData = (): Omit<Parqueo, 'id'> => ({
+  const getInitialFormData = (): ParqueoInput => ({
     direccion: '',
     disponibles: 0,
     etiqueta: '',
-    horarios: [
-      { dia: 'Lunes', inicio: '', fin: '' }
-    ],
-    metodosPago: [
-      { nombre: 'Efectivo', activo: false }
-    ],
+    horarios: [{ dia: 'Lunes', inicio: '', fin: '' }],
+    metodosPago: [{ nombre: 'Efectivo', activo: false }],
     nombre: '',
-    planes: [
-      { rango: '', precio: 0 }
-    ],
+    planes: [{ rango: '', precio: 0 }],
     precioPorHora: 0,
-    servicios: [
-      { nombre: '', precio: 0 }
-    ],
+    servicios: [{ nombre: '', precio: 0 }],
     ubicacion: ''
   });
 
-  const [formData, setFormData] = useState<Omit<Parqueo, 'id'>>(getInitialFormData());
+  const [formData, setFormData] = useState<ParqueoInput>(getInitialFormData());
 
-  const handleGoBack = () => {
-    onBack();
-  };
+  useEffect(() => {
+    const unsuscribe = ParqueosService.suscribirseAParqueos((data) => {
+      setParqueos(data);
+    });
+
+    return () => unsuscribe();
+  }, []);
 
   const handleInputChange = (field: string, value: string | number | boolean) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleHorarioChange = (index: number, field: keyof Parqueo['horarios'][0], value: string) => {
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      horarios: prev.horarios.map((h, i) => i === index ? { ...h, [field]: value } : h)
     }));
   };
 
-  // Funciones para manejar horarios
-  const handleHorarioChange = (index: number, field: keyof Horario, value: string) => {
+  const addHorario = () => setFormData(prev => ({ ...prev, horarios: [...prev.horarios, { dia: '', inicio: '', fin: '' }] }));
+  const removeHorario = (index: number) => setFormData(prev => ({ ...prev, horarios: prev.horarios.filter((_, i) => i !== index) }));
+
+  const handleMetodoPagoChange = (index: number, field: keyof Parqueo['metodosPago'][0], value: string | boolean) => {
     setFormData(prev => ({
       ...prev,
-      horarios: prev.horarios.map((horario, i) => 
-        i === index ? { ...horario, [field]: value } : horario
-      )
+      metodosPago: prev.metodosPago.map((m, i) => i === index ? { ...m, [field]: value } : m)
     }));
   };
 
-  const addHorario = () => {
+  const addMetodoPago = () => setFormData(prev => ({ ...prev, metodosPago: [...prev.metodosPago, { nombre: '', activo: false }] }));
+  const removeMetodoPago = (index: number) => setFormData(prev => ({ ...prev, metodosPago: prev.metodosPago.filter((_, i) => i !== index) }));
+
+  const handlePlanChange = (index: number, field: keyof Parqueo['planes'][0], value: string | number) => {
     setFormData(prev => ({
       ...prev,
-      horarios: [...prev.horarios, { dia: '', inicio: '', fin: '' }]
+      planes: prev.planes.map((p, i) => i === index ? { ...p, [field]: value } : p)
     }));
   };
 
-  const removeHorario = (index: number) => {
+  const addPlan = () => setFormData(prev => ({ ...prev, planes: [...prev.planes, { rango: '', precio: 0 }] }));
+  const removePlan = (index: number) => setFormData(prev => ({ ...prev, planes: prev.planes.filter((_, i) => i !== index) }));
+
+  const handleServicioChange = (index: number, field: keyof Parqueo['servicios'][0], value: string | number) => {
     setFormData(prev => ({
       ...prev,
-      horarios: prev.horarios.filter((_, i) => i !== index)
+      servicios: prev.servicios.map((s, i) => i === index ? { ...s, [field]: value } : s)
     }));
   };
 
-  // Funciones para manejar métodos de pago
-  const handleMetodoPagoChange = (index: number, field: keyof MetodoPago, value: string | boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      metodosPago: prev.metodosPago.map((metodo, i) => 
-        i === index ? { ...metodo, [field]: value } : metodo
-      )
-    }));
-  };
-
-  const addMetodoPago = () => {
-    setFormData(prev => ({
-      ...prev,
-      metodosPago: [...prev.metodosPago, { nombre: '', activo: false }]
-    }));
-  };
-
-  const removeMetodoPago = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      metodosPago: prev.metodosPago.filter((_, i) => i !== index)
-    }));
-  };
-
-  // Funciones para manejar planes
-  const handlePlanChange = (index: number, field: keyof Plan, value: string | number) => {
-    setFormData(prev => ({
-      ...prev,
-      planes: prev.planes.map((plan, i) => 
-        i === index ? { ...plan, [field]: value } : plan
-      )
-    }));
-  };
-
-  const addPlan = () => {
-    setFormData(prev => ({
-      ...prev,
-      planes: [...prev.planes, { rango: '', precio: 0 }]
-    }));
-  };
-
-  const removePlan = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      planes: prev.planes.filter((_, i) => i !== index)
-    }));
-  };
-
-  // Funciones para manejar servicios
-  const handleServicioChange = (index: number, field: keyof Servicio, value: string | number) => {
-    setFormData(prev => ({
-      ...prev,
-      servicios: prev.servicios.map((servicio, i) => 
-        i === index ? { ...servicio, [field]: value } : servicio
-      )
-    }));
-  };
-
-  const addServicio = () => {
-    setFormData(prev => ({
-      ...prev,
-      servicios: [...prev.servicios, { nombre: '', precio: 0 }]
-    }));
-  };
-
-  const removeServicio = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      servicios: prev.servicios.filter((_, i) => i !== index)
-    }));
-  };
+  const addServicio = () => setFormData(prev => ({ ...prev, servicios: [...prev.servicios, { nombre: '', precio: 0 }] }));
+  const removeServicio = (index: number) => setFormData(prev => ({ ...prev, servicios: prev.servicios.filter((_, i) => i !== index) }));
 
   const resetForm = () => {
     setFormData(getInitialFormData());
@@ -182,61 +86,62 @@ const ParqueosPanel: React.FC<ParqueosPanelProps> = ({ onBack }) => {
     setIsEditing(false);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (isEditing && selectedParqueo) {
-      setParqueos(prev => prev.map(p => 
-        p.id === selectedParqueo.id 
-          ? { ...formData, id: selectedParqueo.id }
-          : p
-      ));
-    } else {
-      const newParqueo: Parqueo = {
-        ...formData,
-        id: Date.now().toString()
-      };
-      setParqueos(prev => [...prev, newParqueo]);
+    const { valido, errores } = ParqueosService.validarParqueo(formData);
+    if (!valido) return alert(errores.join('\n'));
+
+    try {
+      if (isEditing && selectedParqueo) {
+        await ParqueosService.actualizarParqueo(selectedParqueo.id, formData);
+      } else {
+        await ParqueosService.crearParqueo(formData);
+      }
+      resetForm();
+    } catch (error) {
+      console.error('Error al guardar parqueo:', error);
+      alert('Ocurrió un error al guardar el parqueo.');
     }
-    
-    resetForm();
   };
 
   const handleEdit = (parqueo: Parqueo) => {
     setSelectedParqueo(parqueo);
     setFormData({
-      direccion: parqueo.direccion,
-      disponibles: parqueo.disponibles,
-      etiqueta: parqueo.etiqueta,
-      horarios: parqueo.horarios,
-      metodosPago: parqueo.metodosPago,
-      nombre: parqueo.nombre,
-      planes: parqueo.planes,
-      precioPorHora: parqueo.precioPorHora,
-      servicios: parqueo.servicios,
-      ubicacion: parqueo.ubicacion
+      direccion: parqueo.direccion || '',
+      disponibles: parqueo.disponibles || 0,
+      etiqueta: parqueo.etiqueta || '',
+      horarios: Array.isArray(parqueo.horarios) ? parqueo.horarios : [],
+      metodosPago: Array.isArray(parqueo.metodosPago) ? parqueo.metodosPago : [],
+      nombre: parqueo.nombre || '',
+      planes: Array.isArray(parqueo.planes) ? parqueo.planes : [],
+      precioPorHora: parqueo.precioPorHora || 0,
+      servicios: Array.isArray(parqueo.servicios) ? parqueo.servicios : [],
+      ubicacion: parqueo.ubicacion || ''
     });
     setIsEditing(true);
   };
 
-  const handleDelete = (id: string) => {
-    setParqueos(prev => prev.filter(p => p.id !== id));
-    if (selectedParqueo?.id === id) {
-      resetForm();
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('¿Estás seguro de eliminar este parqueo?')) return;
+    try {
+      await ParqueosService.eliminarParqueo(id);
+      if (selectedParqueo?.id === id) resetForm();
+    } catch (error) {
+      console.error('Error al eliminar parqueo:', error);
+      alert('Ocurrió un error al eliminar el parqueo.');
     }
   };
 
   const toggleExpanded = (id: string) => {
     setExpandedItems(prev => {
       const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
-      } else {
-        newSet.add(id);
-      }
+      if (newSet.has(id)) newSet.delete(id);
+      else newSet.add(id);
       return newSet;
     });
   };
+
+  const handleGoBack = () => onBack();
 
   return (
     <div className="parqueos-panel">
@@ -729,5 +634,4 @@ const ParqueosPanel: React.FC<ParqueosPanelProps> = ({ onBack }) => {
   );
 };
 
-const ParqueosModule = ParqueosPanel;
-export default ParqueosModule;
+export default ParqueosPanel;
