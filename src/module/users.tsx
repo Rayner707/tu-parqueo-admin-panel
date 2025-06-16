@@ -8,6 +8,7 @@ interface Vehicle {
   modelo: string;
   placa: string;
   tipo: string;
+  foto?: string; // URL de la imagen en base64 o URL
 }
 
 interface Usuario {
@@ -45,7 +46,8 @@ const UsersPanel: React.FC<UsersPanelProps> = ({ onBack }) => {
     marca: '',
     modelo: '',
     placa: '',
-    tipo: 'automovil'
+    tipo: 'automovil',
+    foto: ''
   });
 
   const [formData, setFormData] = useState<Omit<Usuario, 'id' | 'creadoEn'>>(getInitialUserData());
@@ -68,6 +70,42 @@ const UsersPanel: React.FC<UsersPanelProps> = ({ onBack }) => {
     setVehicleFormData(prev => ({
       ...prev,
       [field]: value
+    }));
+  };
+
+  const handleVehicleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validar tipo de archivo
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        alert('Por favor, seleccione una imagen válida (JPG, PNG, GIF, WEBP)');
+        return;
+      }
+
+      // Validar tamaño (máximo 5MB)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        alert('La imagen es demasiado grande. El tamaño máximo es 5MB');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const result = event.target?.result as string;
+        setVehicleFormData(prev => ({
+          ...prev,
+          foto: result
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeVehicleImage = () => {
+    setVehicleFormData(prev => ({
+      ...prev,
+      foto: ''
     }));
   };
 
@@ -135,7 +173,8 @@ const UsersPanel: React.FC<UsersPanelProps> = ({ onBack }) => {
       marca: vehicle.marca,
       modelo: vehicle.modelo,
       placa: vehicle.placa,
-      tipo: vehicle.tipo
+      tipo: vehicle.tipo,
+      foto: vehicle.foto || ''
     });
     setIsEditingVehicle(true);
     setEditingVehicleId(vehicle.id);
@@ -343,6 +382,55 @@ const UsersPanel: React.FC<UsersPanelProps> = ({ onBack }) => {
                   </select>
                 </div>
 
+                <div className="form-group">
+                  <label>Foto del Vehículo:</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleVehicleImageChange}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      fontSize: '14px'
+                    }}
+                  />
+                  {vehicleFormData.foto && (
+                    <div style={{ marginTop: '10px' }}>
+                      <img
+                        src={vehicleFormData.foto}
+                        alt="Vista previa del vehículo"
+                        style={{
+                          width: '100%',
+                          maxWidth: '200px',
+                          height: '150px',
+                          objectFit: 'cover',
+                          borderRadius: '8px',
+                          border: '1px solid #ddd'
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={removeVehicleImage}
+                        style={{
+                          display: 'block',
+                          marginTop: '8px',
+                          padding: '4px 8px',
+                          backgroundColor: '#dc3545',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          fontSize: '12px'
+                        }}
+                      >
+                        Eliminar imagen
+                      </button>
+                    </div>
+                  )}
+                </div>
+
                 <button 
                   type="button" 
                   onClick={handleAddVehicleClick}
@@ -379,10 +467,26 @@ const UsersPanel: React.FC<UsersPanelProps> = ({ onBack }) => {
                 ) : (
                   formData.vehicles.map(vehicle => (
                     <div key={vehicle.id} className="vehicle-item">
-                      <div className="vehicle-info">
-                        <h4>{vehicle.marca} {vehicle.modelo}</h4>
-                        <p><strong>Placa:</strong> {vehicle.placa}</p>
-                        <p><strong>Color:</strong> {vehicle.color} | <strong>Tipo:</strong> {vehicle.tipo}</p>
+                      <div className="vehicle-info" style={{ display: 'flex', alignItems: 'center' }}>
+                        {vehicle.foto && (
+                          <img
+                            src={vehicle.foto}
+                            alt={`${vehicle.marca} ${vehicle.modelo}`}
+                            style={{
+                              width: '80px',
+                              height: '60px',
+                              objectFit: 'cover',
+                              borderRadius: '4px',
+                              marginRight: '10px',
+                              border: '1px solid #ddd'
+                            }}
+                          />
+                        )}
+                        <div>
+                          <h4>{vehicle.marca} {vehicle.modelo}</h4>
+                          <p><strong>Placa:</strong> {vehicle.placa}</p>
+                          <p><strong>Color:</strong> {vehicle.color} | <strong>Tipo:</strong> {vehicle.tipo}</p>
+                        </div>
                       </div>
                       <div className="vehicle-actions">
                         <button 
@@ -518,6 +622,21 @@ const UsersPanel: React.FC<UsersPanelProps> = ({ onBack }) => {
                         ) : (
                           usuario.vehicles.map(vehicle => (
                             <div key={vehicle.id} className="vehicle-card">
+                              {vehicle.foto && (
+                                <img
+                                  src={vehicle.foto}
+                                  alt={`${vehicle.marca} ${vehicle.modelo}`}
+                                  style={{
+                                    width: '100%',
+                                    maxWidth: '150px',
+                                    height: '100px',
+                                    objectFit: 'cover',
+                                    borderRadius: '8px',
+                                    marginBottom: '10px',
+                                    border: '1px solid #ddd'
+                                  }}
+                                />
+                              )}
                               <h5>{vehicle.marca} {vehicle.modelo}</h5>
                               <div className="vehicle-details">
                                 <span><strong>Placa:</strong> {vehicle.placa}</span>
