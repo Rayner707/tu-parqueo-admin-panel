@@ -10,7 +10,6 @@ interface Reservacion {
   horaFin: string;
   horaInicio: string;
   metodoPago: string;
-  parqueoId: string;
   parqueoNombre: string;
   servicioExtra: string | null;
   total: number;
@@ -34,7 +33,6 @@ const ReservationsPanel: React.FC<ReservationsPanelProps> = ({ onBack }) => {
     horaFin: '',
     horaInicio: '',
     metodoPago: 'Efectivo',
-    parqueoId: '',
     parqueoNombre: '',
     servicioExtra: null,
     total: 0
@@ -67,8 +65,7 @@ const ReservationsPanel: React.FC<ReservationsPanelProps> = ({ onBack }) => {
         r.id === selectedReservacion.id 
           ? { 
               ...formData, 
-              id: selectedReservacion.id,
-              parqueoId: selectedReservacion.parqueoId // Mantener parqueoId original
+              id: selectedReservacion.id
             }
           : r
       ));
@@ -94,7 +91,6 @@ const ReservationsPanel: React.FC<ReservationsPanelProps> = ({ onBack }) => {
       horaFin: reservacion.horaFin,
       horaInicio: reservacion.horaInicio,
       metodoPago: reservacion.metodoPago,
-      parqueoId: reservacion.parqueoId,
       parqueoNombre: reservacion.parqueoNombre,
       servicioExtra: reservacion.servicioExtra,
       total: reservacion.total
@@ -149,24 +145,6 @@ const ReservationsPanel: React.FC<ReservationsPanelProps> = ({ onBack }) => {
           <h2>{isEditing ? 'Actualizar Reservación' : 'Crear Nueva Reservación'}</h2>
           
           <div onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-            {!isEditing && (
-              <div>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Parqueo ID:</label>
-                <input
-                  type="text"
-                  value={formData.parqueoId}
-                  onChange={(e) => handleInputChange('parqueoId', e.target.value)}
-                  style={{ 
-                    width: '100%', 
-                    padding: '8px', 
-                    border: '1px solid #ddd', 
-                    borderRadius: '4px'
-                  }}
-                  placeholder="ID del parqueo"
-                />
-              </div>
-            )}
-
             <div>
               <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Nombre del Parqueo:</label>
               <input

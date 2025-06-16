@@ -204,7 +204,7 @@ const Dashboard = ({ onModuleSelect }: { onModuleSelect: (moduleId: ModuleId) =>
 // Importar los módulos desde tus archivos
 import ParqueosModule from './module/parqueos';
 import ReservationsModule from './module/reservations';
-/*import UsersModule from './module/users';*/
+import UsersModule from './module/users';
 
 // Componente principal de la aplicación
 function App() {
@@ -224,8 +224,8 @@ function App() {
         return <ParqueosModule onBack={handleBackToDashboard} />;
       case 'reservations':
         return <ReservationsModule onBack={handleBackToDashboard} />;
-      /*case 'users':
-        return <UsersModule onBack={handleBackToDashboard} />;*/
+      case 'users':
+        return <UsersModule onBack={handleBackToDashboard} />;
       default:
         return <Dashboard onModuleSelect={handleModuleSelect} />;
     }
