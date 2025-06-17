@@ -126,11 +126,46 @@ export class ParqueosService {
   static suscribirseAParqueos(callback: (parqueos: Parqueo[]) => void): () => void {
   const ref = collection(db, COLLECTION_NAME);
 
+  // Función auxiliar para convertir ubicación string -> número
+  const parseUbicacion = (str: string): number => {
+    const [num, dir] = str.split('°').map(s => s.trim());
+    const valor = parseFloat(num);
+    return (dir === 'S' || dir === 'W') ? -valor : valor;
+  };
+
   return onSnapshot(ref, (querySnapshot) => {
     const parqueos: Parqueo[] = [];
 
     querySnapshot.forEach((docSnap) => {
       const data = docSnap.data();
+
+      // ✅ Convertir horarios si vienen como objeto
+      let horariosFormateados: Horario[] = [];
+      if (Array.isArray(data.horarios)) {
+        horariosFormateados = data.horarios;
+      } else if (typeof data.horarios === 'object' && data.horarios !== null) {
+        const diasOrden = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+        horariosFormateados = diasOrden
+          .filter((dia) => data.horarios[dia])
+          .map((dia) => ({
+            dia,
+            inicio: data.horarios[dia].inicio,
+            fin: data.horarios[dia].fin
+          }));
+      }
+
+      // ✅ Convertir métodos de pago: ["QR", "Efectivo"] -> [{ nombre: "QR", activo: true }, ...]
+      const metodosPagoFormateados = Array.isArray(data.metodosPago)
+        ? data.metodosPago.map((nombre: string) => ({ nombre, activo: true }))
+        : [];
+
+      // ✅ Convertir ubicación string -> objeto { lat, lng }
+      const ubicacionFormateada = Array.isArray(data.ubicacion) && data.ubicacion.length === 2
+        ? {
+            lat: parseUbicacion(data.ubicacion[0]),
+            lng: parseUbicacion(data.ubicacion[1])
+          }
+        : { lat: 0, lng: 0 };
 
       const parqueo: Parqueo = {
         id: docSnap.id,
@@ -139,13 +174,11 @@ export class ParqueosService {
         etiqueta: data.etiqueta || '',
         nombre: data.nombre || '',
         precioPorHora: data.precioPorHora || 0,
-        ubicacion: (typeof data.ubicacion === 'object' && 'lat' in data.ubicacion && 'lng' in data.ubicacion)
-  ? data.ubicacion
-  : { lat: 0, lng: 0 },
-        horarios: Array.isArray(data.horarios) ? data.horarios : [],
-        metodosPago: Array.isArray(data.metodosPago) ? data.metodosPago : [],
+        horarios: horariosFormateados,
+        metodosPago: metodosPagoFormateados,
         planes: Array.isArray(data.planes) ? data.planes : [],
         servicios: Array.isArray(data.servicios) ? data.servicios : [],
+        ubicacion: ubicacionFormateada,
         fechaCreacion: data.fechaCreacion,
         fechaActualizacion: data.fechaActualizacion
       };
@@ -153,7 +186,6 @@ export class ParqueosService {
       parqueos.push(parqueo);
     });
 
-    // Ordenar por fechaCreacion si está disponible
     parqueos.sort((a, b) => {
       const tA = a.fechaCreacion?.toMillis?.() || 0;
       const tB = b.fechaCreacion?.toMillis?.() || 0;

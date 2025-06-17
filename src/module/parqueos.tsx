@@ -89,13 +89,27 @@ const ParqueosPanel: React.FC<ParqueosPanelProps> = ({ onBack }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const { valido, errores } = ParqueosService.validarParqueo(formData);
-    if (!valido) return alert(errores.join('\n'));
+    if (!valido) return alert(errores.join(''));
 
     try {
+      const horariosAgrupados: Record<string, { inicio: string; fin: string }> = {};
+      formData.horarios.forEach(({ dia, inicio, fin }) => {
+        if (dia?.trim()) horariosAgrupados[dia] = { inicio, fin };
+      });
       if (isEditing && selectedParqueo) {
-        await ParqueosService.actualizarParqueo(selectedParqueo.id, formData);
+        const horariosAgrupados: Record<string, { inicio: string; fin: string }> = {};
+        formData.horarios.forEach(({ dia, inicio, fin }) => {
+          if (dia) horariosAgrupados[dia] = { inicio, fin };
+        });
+        const payload = { ...formData, horarios: horariosAgrupados };
+        await ParqueosService.actualizarParqueo(selectedParqueo.id, payload as unknown as ParqueoInput);
       } else {
-        await ParqueosService.crearParqueo(formData);
+        const horariosAgrupados: Record<string, { inicio: string; fin: string }> = {};
+      formData.horarios.forEach(({ dia, inicio, fin }) => {
+        if (dia) horariosAgrupados[dia] = { inicio, fin };
+      });
+      const payload = { ...formData, horarios: horariosAgrupados };
+        await ParqueosService.crearParqueo(payload as unknown as ParqueoInput);
       }
       resetForm();
     } catch (error) {
@@ -134,56 +148,44 @@ const ParqueosPanel: React.FC<ParqueosPanelProps> = ({ onBack }) => {
   };
 
   const toggleExpanded = (id: string) => {
-    const parqueo = parqueos.find(p => p.id === id);
-    if (!parqueo) return;
+  const parqueo = parqueos.find(p => p.id === id);
+  if (!parqueo) return;
 
-    // Normalizar campos si están incompletos (prevención de errores visuales)
-    parqueo.horarios = Array.isArray(parqueo.horarios) ? parqueo.horarios : [];
+  // Normalizar campos si están incompletos (prevención de errores visuales)
+    if (typeof parqueo.horarios === 'object' && !Array.isArray(parqueo.horarios)) {
+      const diasOrdenados = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+      const horariosObj = parqueo.horarios as Record<string, { inicio: string; fin: string }>;
+      parqueo.horarios = diasOrdenados
+        .filter(dia => Object.prototype.hasOwnProperty.call(horariosObj, dia))
+        .map(dia => {
+          const entry = horariosObj[dia];
+          return { dia, ...entry };
+        });
+    } else if (!Array.isArray(parqueo.horarios)) {
+      parqueo.horarios = [];
+    }
     parqueo.metodosPago = Array.isArray(parqueo.metodosPago) ? parqueo.metodosPago : [];
     parqueo.planes = Array.isArray(parqueo.planes) ? parqueo.planes : [];
     parqueo.servicios = Array.isArray(parqueo.servicios) ? parqueo.servicios : [];
 
-    setParqueos(prev =>
-      prev.map(p => (p.id === id ? { ...p, ...parqueo } : p))
-    );
 
-    setExpandedItems(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(id)) newSet.delete(id);
-      else newSet.add(id);
-      return newSet;
-    });
-  };
+  setParqueos(prev =>
+  prev.map(p => (p.id === id ? { ...parqueo } : p))
+  );
+
+  setExpandedItems(prev => {
+    const newSet = new Set(prev);
+    if (newSet.has(id)) newSet.delete(id);
+    else newSet.add(id);
+    return newSet;
+  });
+};
+
 
   const handleGoBack = () => onBack();
 
   return (
     <div>
-      <div>
-        <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Latitud:</label>
-        <input
-          type="number"
-          value={formData.ubicacion.lat}
-          onChange={(e) => setFormData(prev => ({
-            ...prev,
-            ubicacion: { ...prev.ubicacion, lat: parseFloat(e.target.value) || 0 }
-          }))}
-          style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
-        />
-      </div>
-
-      <div>
-        <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Longitud:</label>
-        <input
-          type="number"
-          value={formData.ubicacion.lng}
-          onChange={(e) => setFormData(prev => ({
-            ...prev,
-            ubicacion: { ...prev.ubicacion, lng: parseFloat(e.target.value) || 0 }
-          }))}
-          style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
-        />
-      </div>
       {
         <div className="parqueos-panel">
       <div className="header">
@@ -649,31 +651,26 @@ const ParqueosPanel: React.FC<ParqueosPanelProps> = ({ onBack }) => {
                   {expandedItems.has(parqueo.id) && (
                     <div style={{ padding: '15px' }}>
                       <p><strong>Dirección:</strong> {parqueo.direccion}</p>
-                      <p>
-  <strong>Ubicación (Geo):</strong> Lat: {parqueo.ubicacion?.lat}, Lng: {parqueo.ubicacion?.lng}{' '}
-  <a
-    href={`https://www.google.com/maps?q=${parqueo.ubicacion?.lat},${parqueo.ubicacion?.lng}`}
-    target="_blank"
-    rel="noopener noreferrer"
-  >
-    Ver en mapa
-  </a>
-</p>
+                      <p><strong>Ubicación (Geo):</strong> Lat: {parqueo.ubicacion?.lat}, Lng: {parqueo.ubicacion?.lng}{' '}
+                        <a
+                          href={`https://www.google.com/maps?q=${parqueo.ubicacion?.lat},${parqueo.ubicacion?.lng}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Ver en mapa
+                        </a>
+                      </p>
                       <p><strong>Disponibles:</strong> {parqueo.disponibles}</p>
                       <p><strong>Etiqueta:</strong> {parqueo.etiqueta}</p>
                       <p><strong>Precio por Hora:</strong> Bs{parqueo.precioPorHora}</p>
-                      
                       <div style={{ marginTop: '15px' }}>
                         <strong>Horarios:</strong>
-                        <ul style={{ marginTop: '5px' }}>
-                          {parqueo.horarios.map((horario, index) => (
-                            <li key={index}>
-                              {horario.dia}: {horario.inicio} - {horario.fin}
-                            </li>
+                        <ul>
+                          {parqueo.horarios.map((h, index) => (
+                            <li key={index}>{h.dia}: {h.inicio} - {h.fin}</li>
                           ))}
                         </ul>
                       </div>
-                      
                       <div style={{ marginTop: '15px' }}>
                         <strong>Métodos de Pago:</strong>
                         <ul style={{ marginTop: '5px' }}>
