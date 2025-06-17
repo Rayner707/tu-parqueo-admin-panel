@@ -45,7 +45,7 @@ export interface Parqueo {
   planes: Plan[];
   precioPorHora: number;
   servicios: Servicio[];
-  ubicacion: string;
+  ubicacion: { lat: number; lng: number };
   fechaCreacion?: Timestamp;
   fechaActualizacion?: Timestamp;
 }
@@ -139,7 +139,9 @@ export class ParqueosService {
         etiqueta: data.etiqueta || '',
         nombre: data.nombre || '',
         precioPorHora: data.precioPorHora || 0,
-        ubicacion: data.ubicacion || '',
+        ubicacion: (typeof data.ubicacion === 'object' && 'lat' in data.ubicacion && 'lng' in data.ubicacion)
+  ? data.ubicacion
+  : { lat: 0, lng: 0 },
         horarios: Array.isArray(data.horarios) ? data.horarios : [],
         metodosPago: Array.isArray(data.metodosPago) ? data.metodosPago : [],
         planes: Array.isArray(data.planes) ? data.planes : [],
@@ -177,9 +179,13 @@ export class ParqueosService {
       errores.push('La dirección es requerida');
     }
 
-    if (!parqueo.ubicacion?.trim()) {
-      errores.push('La ubicación es requerida');
-    }
+    if (
+  !parqueo.ubicacion ||
+  typeof parqueo.ubicacion.lat !== 'number' ||
+  typeof parqueo.ubicacion.lng !== 'number'
+) {
+  errores.push('La ubicación debe tener latitud y longitud válidas');
+}
 
     if (parqueo.disponibles < 0) {
       errores.push('Los espacios disponibles no pueden ser negativos');

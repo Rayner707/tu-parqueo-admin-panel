@@ -23,7 +23,7 @@ const ParqueosPanel: React.FC<ParqueosPanelProps> = ({ onBack }) => {
     planes: [{ rango: '', precio: 0 }],
     precioPorHora: 0,
     servicios: [{ nombre: '', precio: 0 }],
-    ubicacion: ''
+    ubicacion: { lat: 0, lng: 0 }
   });
 
   const [formData, setFormData] = useState<ParqueoInput>(getInitialFormData());
@@ -106,6 +106,7 @@ const ParqueosPanel: React.FC<ParqueosPanelProps> = ({ onBack }) => {
 
   const handleEdit = (parqueo: Parqueo) => {
     setSelectedParqueo(parqueo);
+    const ubicacionValida = typeof parqueo.ubicacion === 'object' && parqueo.ubicacion !== null && 'lat' in parqueo.ubicacion && 'lng' in parqueo.ubicacion;
     setFormData({
       direccion: parqueo.direccion || '',
       disponibles: parqueo.disponibles || 0,
@@ -116,7 +117,7 @@ const ParqueosPanel: React.FC<ParqueosPanelProps> = ({ onBack }) => {
       planes: Array.isArray(parqueo.planes) ? parqueo.planes : [],
       precioPorHora: parqueo.precioPorHora || 0,
       servicios: Array.isArray(parqueo.servicios) ? parqueo.servicios : [],
-      ubicacion: parqueo.ubicacion || ''
+      ubicacion: ubicacionValida ? parqueo.ubicacion : { lat: 0, lng: 0 }
     });
     setIsEditing(true);
   };
@@ -133,6 +134,19 @@ const ParqueosPanel: React.FC<ParqueosPanelProps> = ({ onBack }) => {
   };
 
   const toggleExpanded = (id: string) => {
+    const parqueo = parqueos.find(p => p.id === id);
+    if (!parqueo) return;
+
+    // Normalizar campos si están incompletos (prevención de errores visuales)
+    parqueo.horarios = Array.isArray(parqueo.horarios) ? parqueo.horarios : [];
+    parqueo.metodosPago = Array.isArray(parqueo.metodosPago) ? parqueo.metodosPago : [];
+    parqueo.planes = Array.isArray(parqueo.planes) ? parqueo.planes : [];
+    parqueo.servicios = Array.isArray(parqueo.servicios) ? parqueo.servicios : [];
+
+    setParqueos(prev =>
+      prev.map(p => (p.id === id ? { ...p, ...parqueo } : p))
+    );
+
     setExpandedItems(prev => {
       const newSet = new Set(prev);
       if (newSet.has(id)) newSet.delete(id);
@@ -144,7 +158,34 @@ const ParqueosPanel: React.FC<ParqueosPanelProps> = ({ onBack }) => {
   const handleGoBack = () => onBack();
 
   return (
-    <div className="parqueos-panel">
+    <div>
+      <div>
+        <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Latitud:</label>
+        <input
+          type="number"
+          value={formData.ubicacion.lat}
+          onChange={(e) => setFormData(prev => ({
+            ...prev,
+            ubicacion: { ...prev.ubicacion, lat: parseFloat(e.target.value) || 0 }
+          }))}
+          style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+        />
+      </div>
+
+      <div>
+        <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Longitud:</label>
+        <input
+          type="number"
+          value={formData.ubicacion.lng}
+          onChange={(e) => setFormData(prev => ({
+            ...prev,
+            ubicacion: { ...prev.ubicacion, lng: parseFloat(e.target.value) || 0 }
+          }))}
+          style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+        />
+      </div>
+      {
+        <div className="parqueos-panel">
       <div className="header">
         <button className="back-button" onClick={handleGoBack}>
           ← Volver
@@ -178,14 +219,42 @@ const ParqueosPanel: React.FC<ParqueosPanelProps> = ({ onBack }) => {
             </div>
 
             <div>
-              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Ubicación:</label>
-              <input
-                type="text"
-                value={formData.ubicacion}
-                onChange={(e) => handleInputChange('ubicacion', e.target.value)}
-                style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
-              />
-            </div>
+  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Latitud:</label>
+  <input
+    type="text"
+    value={`${Math.abs(formData.ubicacion.lat).toFixed(8)}° ${formData.ubicacion.lat < 0 ? 'S' : 'N'}`}
+    onChange={(e) => {
+      const parsed = parseFloat(e.target.value);
+      setFormData(prev => ({
+        ...prev,
+        ubicacion: {
+          ...prev.ubicacion,
+          lat: isNaN(parsed) ? prev.ubicacion.lat : parsed
+        }
+      }));
+    }}
+    style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+  />
+</div>
+
+<div>
+  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Longitud:</label>
+  <input
+    type="text"
+    value={`${Math.abs(formData.ubicacion.lng).toFixed(8)}° ${formData.ubicacion.lng < 0 ? 'W' : 'E'}`}
+    onChange={(e) => {
+      const parsed = parseFloat(e.target.value);
+      setFormData(prev => ({
+        ...prev,
+        ubicacion: {
+          ...prev.ubicacion,
+          lng: isNaN(parsed) ? prev.ubicacion.lng : parsed
+        }
+      }));
+    }}
+    style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+  />
+</div>
 
             <div>
               <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Disponibles:</label>
@@ -580,7 +649,16 @@ const ParqueosPanel: React.FC<ParqueosPanelProps> = ({ onBack }) => {
                   {expandedItems.has(parqueo.id) && (
                     <div style={{ padding: '15px' }}>
                       <p><strong>Dirección:</strong> {parqueo.direccion}</p>
-                      <p><strong>Ubicación:</strong> {parqueo.ubicacion}</p>
+                      <p>
+  <strong>Ubicación (Geo):</strong> Lat: {parqueo.ubicacion?.lat}, Lng: {parqueo.ubicacion?.lng}{' '}
+  <a
+    href={`https://www.google.com/maps?q=${parqueo.ubicacion?.lat},${parqueo.ubicacion?.lng}`}
+    target="_blank"
+    rel="noopener noreferrer"
+  >
+    Ver en mapa
+  </a>
+</p>
                       <p><strong>Disponibles:</strong> {parqueo.disponibles}</p>
                       <p><strong>Etiqueta:</strong> {parqueo.etiqueta}</p>
                       <p><strong>Precio por Hora:</strong> Bs{parqueo.precioPorHora}</p>
@@ -630,6 +708,8 @@ const ParqueosPanel: React.FC<ParqueosPanelProps> = ({ onBack }) => {
           </div>
         </div>
       </div>
+    </div>
+      }
     </div>
   );
 };
