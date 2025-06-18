@@ -18,9 +18,9 @@ const ParqueosPanel: React.FC<ParqueosPanelProps> = ({ onBack }) => {
     disponibles: 0,
     etiqueta: '',
     horarios: [{ dia: 'Lunes', inicio: '', fin: '' }],
-    metodosPago: [{ nombre: 'Efectivo', activo: false }],
+    metodosPago: [{ nombre: 'Efectivo'}],
     nombre: '',
-    planes: [{ rango: '', precio: 0 }],
+    planes: [{ label: '', precio: 0 }],
     precioPorHora: 0,
     servicios: [{ nombre: '', precio: 0 }],
     ubicacion: { lat: 0, lng: 0 }
@@ -50,14 +50,14 @@ const ParqueosPanel: React.FC<ParqueosPanelProps> = ({ onBack }) => {
   const addHorario = () => setFormData(prev => ({ ...prev, horarios: [...prev.horarios, { dia: '', inicio: '', fin: '' }] }));
   const removeHorario = (index: number) => setFormData(prev => ({ ...prev, horarios: prev.horarios.filter((_, i) => i !== index) }));
 
-  const handleMetodoPagoChange = (index: number, field: keyof Parqueo['metodosPago'][0], value: string | boolean) => {
+  const handleMetodoPagoChange = (index: number, field: keyof Parqueo['metodosPago'][0], value: string) => {
     setFormData(prev => ({
       ...prev,
       metodosPago: prev.metodosPago.map((m, i) => i === index ? { ...m, [field]: value } : m)
     }));
   };
 
-  const addMetodoPago = () => setFormData(prev => ({ ...prev, metodosPago: [...prev.metodosPago, { nombre: '', activo: false }] }));
+  const addMetodoPago = () => setFormData(prev => ({ ...prev, metodosPago: [...prev.metodosPago, { nombre: '' }] }));
   const removeMetodoPago = (index: number) => setFormData(prev => ({ ...prev, metodosPago: prev.metodosPago.filter((_, i) => i !== index) }));
 
   const handlePlanChange = (index: number, field: keyof Parqueo['planes'][0], value: string | number) => {
@@ -67,7 +67,7 @@ const ParqueosPanel: React.FC<ParqueosPanelProps> = ({ onBack }) => {
     }));
   };
 
-  const addPlan = () => setFormData(prev => ({ ...prev, planes: [...prev.planes, { rango: '', precio: 0 }] }));
+  const addPlan = () => setFormData(prev => ({ ...prev, planes: [...prev.planes, { label: '', precio: 0 }] }));
   const removePlan = (index: number) => setFormData(prev => ({ ...prev, planes: prev.planes.filter((_, i) => i !== index) }));
 
   const handleServicioChange = (index: number, field: keyof Parqueo['servicios'][0], value: string | number) => {
@@ -394,14 +394,6 @@ const ParqueosPanel: React.FC<ParqueosPanelProps> = ({ onBack }) => {
                     onChange={(e) => handleMetodoPagoChange(index, 'nombre', e.target.value)}
                     style={{ flex: 1, padding: '6px', border: '1px solid #ddd', borderRadius: '4px' }}
                   />
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <input
-                      type="checkbox"
-                      checked={metodo.activo}
-                      onChange={(e) => handleMetodoPagoChange(index, 'activo', e.target.checked)}
-                    />
-                    Activo
-                  </label>
                   {formData.metodosPago.length > 1 && (
                     <button
                       type="button"
@@ -455,8 +447,8 @@ const ParqueosPanel: React.FC<ParqueosPanelProps> = ({ onBack }) => {
                   <input
                     type="text"
                     placeholder="Rango"
-                    value={plan.rango}
-                    onChange={(e) => handlePlanChange(index, 'rango', e.target.value)}
+                    value={plan.label}
+                    onChange={(e) => handlePlanChange(index, 'label', e.target.value)}
                     style={{ flex: 1, padding: '6px', border: '1px solid #ddd', borderRadius: '4px' }}
                   />
                   <input
@@ -650,54 +642,88 @@ const ParqueosPanel: React.FC<ParqueosPanelProps> = ({ onBack }) => {
                   
                   {expandedItems.has(parqueo.id) && (
                     <div style={{ padding: '15px' }}>
-                      <p><strong>Dirección:</strong> {parqueo.direccion}</p>
-                      <p><strong>Ubicación (Geo):</strong> Lat: {parqueo.ubicacion?.lat}, Lng: {parqueo.ubicacion?.lng}{' '}
-                        <a
-                          href={`https://www.google.com/maps?q=${parqueo.ubicacion?.lat},${parqueo.ubicacion?.lng}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          Ver en mapa
-                        </a>
-                      </p>
-                      <p><strong>Disponibles:</strong> {parqueo.disponibles}</p>
-                      <p><strong>Etiqueta:</strong> {parqueo.etiqueta}</p>
-                      <p><strong>Precio por Hora:</strong> Bs{parqueo.precioPorHora}</p>
-                      <div style={{ marginTop: '15px' }}>
-                        <strong>Horarios:</strong>
-                        <ul>
-                          {parqueo.horarios.map((h, index) => (
-                            <li key={index}>{h.dia}: {h.inicio} - {h.fin}</li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div style={{ marginTop: '15px' }}>
-                        <strong>Métodos de Pago:</strong>
-                        <ul style={{ marginTop: '5px' }}>
-                          {parqueo.metodosPago.filter(m => m.activo).map((metodo, index) => (
-                            <li key={index}>{metodo.nombre}</li>
-                          ))}
-                        </ul>
-                      </div>
-                      
-                      <div style={{ marginTop: '15px' }}>
-                        <strong>Planes:</strong>
-                        <ul style={{ marginTop: '5px' }}>
-                          {parqueo.planes.map((plan, index) => (
-                            <li key={index}>{plan.rango}: Bs{plan.precio}</li>
-                          ))}
-                        </ul>
-                      </div>
-                      
-                      <div style={{ marginTop: '15px' }}>
-                        <strong>Servicios:</strong>
-                        <ul style={{ marginTop: '5px' }}>
-                          {parqueo.servicios.map((servicio, index) => (
-                            <li key={index}>{servicio.nombre}: Bs{servicio.precio}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
+  <p><strong>Dirección:</strong> {parqueo.direccion}</p>
+
+  <p>
+  <strong>Ubicación (GeoPoint):</strong><br />
+  <span style={{ display: 'inline-block', marginLeft: '10px' }}>
+    {`${Math.abs(parqueo.ubicacion.lat).toFixed(6)}° ${parqueo.ubicacion.lat >= 0 ? 'N' : 'S'}, `}
+    {`${Math.abs(parqueo.ubicacion.lng).toFixed(6)}° ${parqueo.ubicacion.lng >= 0 ? 'E' : 'W'}`}
+    <br />
+    <a
+      href={`https://www.google.com/maps?q=${parqueo.ubicacion.lat},${parqueo.ubicacion.lng}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{
+        display: 'inline-block',
+        marginTop: '8px',
+        padding: '6px 12px',
+        backgroundColor: '#4285F4',
+        color: 'white',
+        textDecoration: 'none',
+        borderRadius: '4px',
+        fontSize: '14px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+        transition: 'background-color 0.3s ease'
+      }}
+      onMouseOver={e => (e.currentTarget.style.backgroundColor = '#357ae8')}
+      onMouseOut={e => (e.currentTarget.style.backgroundColor = '#4285F4')}
+    >
+      📍 Ver en Google Maps
+    </a>
+  </span>
+</p>
+
+  <p><strong>Disponibles:</strong> {parqueo.disponibles}</p>
+  <p><strong>Etiqueta:</strong> {parqueo.etiqueta}</p>
+  <p><strong>Precio por Hora:</strong> Bs{parqueo.precioPorHora}</p>
+
+  <div style={{ marginTop: '15px' }}>
+    <strong>Horarios:</strong>
+    <ul>
+      {(Array.isArray(parqueo.horarios)
+        ? parqueo.horarios
+          : Object.entries(parqueo.horarios || {}).map(([dia, data]) => ({
+        dia,
+          inicio: (data as { inicio: string; fin: string }).inicio,
+          fin: (data as { inicio: string; fin: string }).fin,
+        }))
+        ).map((h, index) => (
+        <li key={index}>
+          {h.dia}: {h.inicio} - {h.fin}
+        </li>
+      ))}
+    </ul>
+  </div>
+
+  <div style={{ marginTop: '15px' }}>
+    <strong>Métodos de Pago:</strong>
+    <ul style={{ marginTop: '5px' }}>
+      {parqueo.metodosPago.map((metodo, index) => (
+        <li key={index}>{metodo.nombre}</li>
+      ))}
+    </ul>
+  </div>
+
+  <div style={{ marginTop: '15px' }}>
+    <strong>Planes:</strong>
+    <ul style={{ marginTop: '5px' }}>
+      {parqueo.planes.map((plan, index) => (
+        <li key={index}>{plan.label}: Bs{plan.precio}</li>
+      ))}
+    </ul>
+  </div>
+
+  <div style={{ marginTop: '15px' }}>
+    <strong>Servicios:</strong>
+    <ul style={{ marginTop: '5px' }}>
+      {parqueo.servicios.map((servicio, index) => (
+        <li key={index}>{servicio.nombre}: Bs{servicio.precio}</li>
+      ))}
+    </ul>
+  </div>
+</div>
+
                   )}
                 </div>
               ))
