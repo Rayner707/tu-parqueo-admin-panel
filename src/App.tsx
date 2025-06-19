@@ -177,7 +177,9 @@ const Dashboard = ({ onModuleSelect }: { onModuleSelect: (moduleId: ModuleId) =>
           </div>
         </div>
 
-        {/* Stats rápidas */}
+          {/*Esqueleto - No funcional*/}
+
+        {/* Stats rápidas
         <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 text-center">
             <div className="text-2xl font-bold text-red-600">248</div>
@@ -195,7 +197,7 @@ const Dashboard = ({ onModuleSelect }: { onModuleSelect: (moduleId: ModuleId) =>
             <div className="text-2xl font-bold text-purple-600">1,247</div>
             <div className="text-xs text-gray-600">Usuarios Registrados</div>
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );

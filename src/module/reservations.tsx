@@ -278,10 +278,6 @@ const ReservationsPanel: React.FC<ReservationsProps> = ({ onBack }) => {
         (v) => v.id === formData.vehiculoId
       );
       setSelectedVehicle(vehicle || null);
-      if (!isEditingRef.current) {
-        setSelectedVehicle(null);
-        setFormData((prev) => ({ ...prev, vehiculoId: "" }));
-      }
     } else if (!formData.vehiculoId) {
       setSelectedVehicle(null);
     }
@@ -317,10 +313,6 @@ const ReservationsPanel: React.FC<ReservationsProps> = ({ onBack }) => {
         (s) => s.nombre === formData.servicioExtra
       );
       setSelectedServicio(servicio || null);
-      if (!isEditingRef.current) {
-        setSelectedServicio(null);
-        setFormData((prev) => ({ ...prev, servicioExtra: "" }));
-      }
     } else if (!formData.servicioExtra) {
       setSelectedServicio(null);
     }
