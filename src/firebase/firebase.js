@@ -1,20 +1,25 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
-import { getStorage } from "firebase/storage"; // NUEVO: Importar Storage
+import { getStorage } from "firebase/storage";
 
-// Reemplaza con tu configuración
 const firebaseConfig = {
-  apiKey: "AIzaSyBYuaAVyjameyEy6cALQsNM1bR39ck1CZ4",
-  authDomain: "tu-parque-bo.firebaseapp.com",
-  projectId: "tu-parque-bo",
-  storageBucket: "tu-parque-bo.appspot.com", // Asegúrate que sea el correcto, usualmente termina en appspot.com
-  messagingSenderId: "295913213710",
-  appId: "1:295913213710:android:5b387e3211728b1b64d15f"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-// Inicializa Firebase
+const missingKeys = Object.entries(firebaseConfig)
+  .filter(([, value]) => !value)
+  .map(([key]) => key);
+
+if (missingKeys.length > 0) {
+  throw new Error(`Firebase config missing env vars: ${missingKeys.join(", ")}`);
+}
+
 const app = initializeApp(firebaseConfig);
 
-// Exporta los servicios que usarás
 export const db = getFirestore(app);
-export const storage = getStorage(app); // NUEVO: Exportar Storage
+export const storage = getStorage(app);
